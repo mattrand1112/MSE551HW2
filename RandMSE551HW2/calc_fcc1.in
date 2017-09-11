@@ -1,0 +1,69 @@
+# Find minimum energy fcc configuration
+# Mark Tschopp, 2010
+# Modified by Abduljabar Alsayoud
+
+# ---------- Initialize Simulation --------------------- 
+clear 
+units metal 
+dimension 3 
+boundary p p p 
+atom_style atomic 
+atom_modify map array
+
+# ---------- Variables --------------------- 
+#variable latconst equal 4
+
+# ---------- Create Atoms --------------------- 
+#lattice has to be specified first -> all geometry commands are based on it
+lattice 	fcc ${latconst}
+#region ID style args keyword (0 1 means 0 lat) (specifies the simulation cell)
+region	box block 0 1 0 1 0 1 units lattice
+#create_box N region-ID (N=# of atom types)
+create_box	1 box
+
+lattice	fcc ${latconst} orient x 1 0 0 orient y 0 1 0 orient z 0 0 1  
+#create_atoms type style
+create_atoms 1 box
+replicate 1 1 1
+
+# ---------- Define Interatomic Potential --------------------- 
+pair_style eam/alloy 
+pair_coeff * * AlCu.eam.alloy Al
+neighbor 1 bin 
+neigh_modify delay 0 every 1 check yes 
+ 
+# ---------- Define Settings --------------------- 
+#compute ID group-ID style 
+#potentail energy per atom
+compute eng all pe/atom
+#the sum of all poteng 
+compute eatoms all reduce sum c_eng 
+
+
+# ---------- Run Minimization --------------------- 
+#So timestep start at 0
+reset_timestep 0 
+fix 1 all box/relax iso 0.0 vmax 0.001
+thermo 1 
+thermo_style custom step pe lx ly lz press vol pxx pyy pzz c_eatoms 
+#dump		1 all atom 100 dump.551
+log             log.lammps  
+min_style cg 
+minimize 0 0 0 0
+#write_data optimized.data 
+
+variable natoms equal "count(all)" 
+variable totaleng equal "c_eatoms"
+variable length equal "lx"
+variable ecoh equal "v_totaleng/v_natoms"
+variable vol1 equal "vol"
+
+print "Total energy (eV) = ${totaleng};"
+print "Number of atoms = ${natoms};"
+print "Lattice constant (Angstoms) = ${length};"
+print "Cohesive energy (eV) = ${ecoh};"
+print "Volume = ${vol1};"
+print "%% totaleng = ${totaleng};"
+print "%% volume = ${vol1};"
+
+print "All done!" 

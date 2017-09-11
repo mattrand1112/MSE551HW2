@@ -1,0 +1,47 @@
+# minimal LAMMPS input file: change potential
+
+# it is good practice to make these settings explicit
+units lj
+atom_style atomic
+boundary p p p
+
+lattice sc 1.0
+
+# create simulation cell
+region r1 block -5.0 5.0 -5.0 5.0 -5.0 5.0
+create_box 1 r1
+
+# required must come after box is created
+mass 1 1.0
+
+# create two atoms, 
+create_atoms 1 single 0.0 0.0 0.0
+create_atoms 1 single  ${spacing} 0.0 0.0
+
+# set non-bonded potential
+pair_style lj/cut 5.0
+pair_coeff 1 1 1.0 1.0
+
+#velocity all create 1.0 54321 mom no rot no
+
+reset_timestep 0 
+fix 1 all box/relax iso 0.0 vmax 0.001
+thermo 1 
+thermo_style custom step temp press etotal
+#dump		1 all atom 100 dump.551
+log             log.lammps  
+min_style cg 
+minimize 0 0 0 0
+#write_data LJoptimized.data
+variable tenergy equal "etotal"
+print "Total energy (eV) = ${tenergy};"
+print "%% totalenergy1 = ${tenergy};"
+
+
+# continue run with different potential
+#pair_style morse 5.0
+#pair_coeff 1 1 1.0 5.0 1.12
+
+#minimize 0 0 100 1000
+#write_data MOoptimized.data
+
